@@ -27,7 +27,7 @@ function makeGameState(overrides: Partial<GameState> = {}): GameState {
     pendingExecutivePower: null,
     result: null,
     gameLog: [],
-    roomSettings: { qrCodeEnabled: true, centralBoardEnabled: false },
+    roomSettings: { qrCodeEnabled: true, centralBoardEnabled: false, ttsNarrationEnabled: false },
     spectatorCount: 0,
     ...overrides,
   };
