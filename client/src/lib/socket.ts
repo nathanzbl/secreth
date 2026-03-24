@@ -9,8 +9,9 @@ const SERVER_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 export const socket: TypedSocket = io(SERVER_URL, {
   autoConnect: false,
   reconnection: true,
-  reconnectionAttempts: 10,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
 });
 
 export default socket;

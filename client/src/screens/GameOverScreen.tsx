@@ -41,8 +41,14 @@ export default function GameOverScreen() {
     }
   };
 
-  const handleLeave = () => {
-    reset();
+  const handleLeave = async () => {
+    if (isHost) {
+      const error = await emitters.dismissRoom();
+      if (error) addNotification(error, 'error');
+      // room:dismissed listener will call reset() for everyone
+    } else {
+      reset();
+    }
   };
 
   return (

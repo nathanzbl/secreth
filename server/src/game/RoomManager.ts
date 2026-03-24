@@ -78,6 +78,16 @@ export class RoomManager {
     return room;
   }
 
+  dismissRoom(roomCode: string): void {
+    this.rooms.delete(roomCode);
+    for (const [playerId, code] of this.playerRooms) {
+      if (code === roomCode) this.playerRooms.delete(playerId);
+    }
+    for (const [socketId, code] of this.spectatorRooms) {
+      if (code === roomCode) this.spectatorRooms.delete(socketId);
+    }
+  }
+
   leaveRoom(playerId: string): GameRoom | undefined {
     const room = this.getRoomForPlayer(playerId);
     if (room) {

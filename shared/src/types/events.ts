@@ -19,6 +19,7 @@ export interface ClientToServerEvents {
   ) => void;
   'lobby:start': (callback: (error: string | null) => void) => void;
   'lobby:restart': (callback: (error: string | null) => void) => void;
+  'lobby:dismiss': (callback: (error: string | null) => void) => void;
   'lobby:update-settings': (
     settings: Partial<RoomSettings>,
     callback: (error: string | null) => void
@@ -94,6 +95,7 @@ export interface ServerToClientEvents {
   'game:execution': (targetId: string, targetName: string, wasHitler: boolean) => void;
   'game:investigation-result': (targetId: string, party: PartyMembership) => void;
   'game:over': (result: GameResult, roles: Record<string, { role: string; name: string }>) => void;
+  'room:dismissed': () => void;
 
   // Voice narration (base64-encoded MP3, board device only)
   'game:narration': (audioBase64: string) => void;

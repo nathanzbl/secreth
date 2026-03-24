@@ -25,6 +25,14 @@ export function restartGame(): Promise<string | null> {
   });
 }
 
+export function dismissRoom(): Promise<string | null> {
+  return new Promise((resolve) => {
+    socket.emit('lobby:dismiss', (error) => {
+      resolve(error);
+    });
+  });
+}
+
 export function startGame(): Promise<string | null> {
   return new Promise((resolve) => {
     socket.emit('lobby:start', (error) => {

@@ -48,6 +48,20 @@ export function useSocket() {
 
       if (!hasConnectedOnce.current) {
         hasConnectedOnce.current = true;
+        const saved = sessionStorage.getItem('playerSession');
+        if (saved) {
+          const { roomCode, playerName } = JSON.parse(saved) as { roomCode: string; playerName: string };
+          useGameStore.getState().setPlayerName(playerName);
+          useGameStore.getState().setIsReconnecting(true);
+          socket.emit('lobby:join', roomCode, playerName, (error) => {
+            if (error) {
+              sessionStorage.removeItem('playerSession');
+              useGameStore.getState().setIsReconnecting(false);
+              addNotification(`Couldn't rejoin game: ${error}`, 'error');
+            }
+            // success: game:state listener clears isReconnecting and saves session
+          });
+        }
         return;
       }
 
@@ -67,17 +81,22 @@ export function useSocket() {
       }
 
       if (gameState && playerName) {
+        useGameStore.getState().setIsReconnecting(true);
         socket.emit('lobby:join', gameState.roomCode, playerName, (error) => {
           if (error) {
+            useGameStore.getState().setIsReconnecting(false);
             addNotification(`Reconnection failed: ${error}`, 'error');
-          } else {
-            addNotification('Reconnected to game', 'success');
           }
+          // success: game:state listener clears isReconnecting
         });
       }
     };
 
     const onDisconnect = (reason: string) => {
+      const { gameState } = useGameStore.getState();
+      if (gameState && gameState.phase !== 'lobby') {
+        useGameStore.getState().setIsReconnecting(true);
+      }
       addNotification(`Disconnected: ${reason}`, 'warning');
     };
 

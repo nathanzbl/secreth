@@ -9,6 +9,7 @@ import ElectionTracker from '../components/board/ElectionTracker';
 import DrawDiscardPile from '../components/board/DrawDiscardPile';
 import PlayerRing from '../components/board/PlayerRing';
 import { NotificationToast } from '../components/ui/NotificationToast';
+import { Spinner } from '../components/ui/Spinner';
 import { RolePeek } from '../components/ui/RolePeek';
 import { GameLogToggle, GameLogPanel } from '../components/ui/GameLog';
 import { NotePadToggle, NotePadPanel } from '../components/ui/NotePad';
@@ -48,6 +49,7 @@ export default function GameScreen() {
   const privateState = useGameStore((s) => s.privateState);
   const myPlayerId = useGameStore((s) => s.myPlayerId);
   const voteReveal = useGameStore((s) => s.voteReveal);
+  const isReconnecting = useGameStore((s) => s.isReconnecting);
   const [selectedPlayerId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -69,6 +71,23 @@ export default function GameScreen() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-propaganda overflow-x-hidden">
+      <AnimatePresence>
+        {isReconnecting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80"
+          >
+            <Spinner size="lg" />
+            <p className="mt-4 text-sm font-sans text-stone-400 uppercase tracking-[0.2em]">
+              Reconnecting…
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ─── Government banner ─── */}
       <header className="flex items-center justify-center px-3 pt-2 pb-1 sm:px-4 sm:pt-3 sm:pb-2">
         <GovernmentBanner

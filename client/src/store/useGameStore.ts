@@ -38,6 +38,7 @@ interface GameStore {
   isBoardMode: boolean;
   authUser: AuthUser | null;
   authToken: string | null;
+  isReconnecting: boolean;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -52,6 +53,7 @@ interface GameStore {
   setIsBoardMode: (isBoardMode: boolean) => void;
   setAuthUser: (user: AuthUser | null) => void;
   setAuthToken: (token: string | null) => void;
+  setIsReconnecting: (v: boolean) => void;
   logout: () => void;
   addNotification: (message: string, type: Notification['type']) => void;
   clearNotification: (id: string) => void;
@@ -79,6 +81,7 @@ const initialState = {
   isBoardMode: false,
   authUser: null as AuthUser | null,
   authToken: null as string | null,
+  isReconnecting: false,
 };
 
 let notifCounter = 0;
@@ -99,6 +102,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setIsBoardMode: (isBoardMode) => set({ isBoardMode }),
   setAuthUser: (authUser) => set({ authUser }),
   setAuthToken: (authToken) => set({ authToken }),
+  setIsReconnecting: (isReconnecting) => set({ isReconnecting }),
   logout: () => {
     localStorage.removeItem('authToken');
     set({ authUser: null, authToken: null });

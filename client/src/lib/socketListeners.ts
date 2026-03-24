@@ -13,6 +13,7 @@ export function registerSocketListeners(socket: TypedSocket, store: StoreApi, en
     // Auto-switch screen based on phase
     if (state.phase === 'lobby') {
       get().setScreen('lobby');
+      sessionStorage.removeItem('playerSession');
       // Clear game-over state when returning to lobby (play again)
       if (get().gameOverData) {
         get().setGameOverData(null);
@@ -21,7 +22,17 @@ export function registerSocketListeners(socket: TypedSocket, store: StoreApi, en
       }
     } else {
       get().setScreen('game');
+      const playerName = get().playerName;
+      if (playerName) {
+        sessionStorage.setItem('playerSession', JSON.stringify({
+          roomCode: state.roomCode,
+          playerName,
+        }));
+      }
     }
+
+    // Clear reconnecting overlay on successful state receipt
+    get().setIsReconnecting(false);
   });
 
   // Private state
@@ -93,6 +104,12 @@ export function registerSocketListeners(socket: TypedSocket, store: StoreApi, en
     }
   });
 
+  // Room dismissed by host
+  socket.on('room:dismissed', () => {
+    sessionStorage.removeItem('playerSession');
+    get().reset();
+  });
+
   // Errors
   socket.on('error', (message) => {
     get().addNotification(message, 'error');
@@ -113,6 +130,7 @@ export function registerSocketListeners(socket: TypedSocket, store: StoreApi, en
     socket.off('game:investigation-result');
     socket.off('game:over');
     socket.off('game:narration');
+    socket.off('room:dismissed');
     socket.off('error');
   };
 }

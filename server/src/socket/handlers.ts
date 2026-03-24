@@ -8,6 +8,9 @@ import { recordGameStart, recordGameEnd, countRecentGames } from '../services/ga
 // roomCode → database game id (for recording game lifecycle)
 const gameDbIds = new Map<string, number>();
 
+// "roomCode:playerName" → pending player-left notification timer
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents, {}, SocketData>;
 type AppServer = Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>;
 
@@ -118,6 +121,10 @@ export function registerSocketHandlers(io: AppServer) {
           socket.data.playerName = playerName;
           socket.join(code);
           socket.join(socket.id);
+          // Cancel any pending player-left notification
+          const timerKey = `${code}:${playerName}`;
+          const pending = disconnectTimers.get(timerKey);
+          if (pending) { clearTimeout(pending); disconnectTimers.delete(timerKey); }
           callback(null);
           io.to(code).emit('game:player-reconnected', playerName);
           broadcastState(io, reconnected);
@@ -197,11 +204,41 @@ export function registerSocketHandlers(io: AppServer) {
         if (!room) throw new Error('Not in a room');
         room.resetToLobby(socket.id);
         log('lobby:restart', socket.id, { roomCode: room.roomCode, success: true });
+        // Clear any pending disconnect timers for this room
+        for (const [key, timer] of disconnectTimers) {
+          if (key.startsWith(room.roomCode + ':')) {
+            clearTimeout(timer);
+            disconnectTimers.delete(key);
+          }
+        }
         io.to(room.roomCode).emit('game:phase-change', 'lobby');
         broadcastState(io, room);
         callback(null);
       } catch (err: any) {
         logError('lobby:restart', socket.id, err);
+        callback(err.message);
+      }
+    });
+
+    socket.on('lobby:dismiss', (callback) => {
+      log('lobby:dismiss', socket.id);
+      try {
+        const room = rooms.getRoomForPlayer(socket.id);
+        if (!room) throw new Error('Not in a room');
+        if (room.getState().hostId !== socket.data.playerId) throw new Error('Only the host can dismiss the room');
+        // Clear any pending disconnect timers for this room
+        for (const [key, timer] of disconnectTimers) {
+          if (key.startsWith(room.roomCode + ':')) {
+            clearTimeout(timer);
+            disconnectTimers.delete(key);
+          }
+        }
+        io.to(room.roomCode).emit('room:dismissed');
+        rooms.dismissRoom(room.roomCode);
+        log('lobby:dismiss', socket.id, { roomCode: room.roomCode });
+        callback(null);
+      } catch (err: any) {
+        logError('lobby:dismiss', socket.id, err);
         callback(err.message);
       }
     });
@@ -528,8 +565,13 @@ export function registerSocketHandlers(io: AppServer) {
 
       const room = rooms.leaveRoom(socket.id);
       if (room) {
-        io.to(room.roomCode).emit('game:player-left', socket.data.playerName ?? 'A player');
         broadcastState(io, room);
+        const playerName = socket.data.playerName ?? 'A player';
+        const timerKey = `${room.roomCode}:${playerName}`;
+        disconnectTimers.set(timerKey, setTimeout(() => {
+          disconnectTimers.delete(timerKey);
+          io.to(room.roomCode).emit('game:player-left', playerName);
+        }, 10_000));
       }
     });
   });
